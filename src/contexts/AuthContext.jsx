@@ -1,24 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState } from 'react';
+import { auth } from '@/lib/supabase';
 
-interface User {
-  id: string;
-  name: string;
-  aadhaar: string;
-  mobile?: string;
-  role: 'pilgrim' | 'authority';
-  bankAccount?: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  login: (aadhaar: string, name: string, role: 'pilgrim' | 'authority') => void;
-  logout: () => void;
-  isAuthenticated: boolean;
-  language: 'en' | 'hi';
-  toggleLanguage: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -28,28 +11,49 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [language, setLanguage] = useState('hi');
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [language, setLanguage] = useState<'en' | 'hi'>('en');
+  const login = async (aadhaar, name, role) => {
+    try {
+      // For demo purposes, create a mock email from Aadhaar
+      const email = `${aadhaar}@simhastha.gov.in`;
+      const password = aadhaar; // In production, use proper password
 
-  const login = (aadhaar: string, name: string, role: 'pilgrim' | 'authority') => {
-    // Mock authentication with Aadhaar validation
-    const mockUser: User = {
-      id: `user_${Date.now()}`,
-      name: name,
-      aadhaar: aadhaar,
-      mobile: `9${Math.floor(Math.random() * 900000000) + 100000000}`, // Mock mobile
-      role: role,
-      bankAccount: `${aadhaar.replace(/\D/g, '').slice(-4)}XXXX` // Mock bank account
-    };
-    setUser(mockUser);
+      // Try to sign in first
+      let result = await auth.signIn(email, password);
+      
+      // If sign in fails, create new user
+      if (result.error) {
+        result = await auth.signUp(email, password, {
+          full_name: name,
+          aadhaar_number: aadhaar,
+          role: role
+        });
+      }
+
+      if (result.data?.user) {
+        const mockUser = {
+          id: result.data.user.id,
+          name: name,
+          aadhaar: aadhaar,
+          mobile: `9${Math.floor(Math.random() * 900000000) + 100000000}`,
+          role: role,
+          bankAccount: `${aadhaar.slice(-4)}XXXX`
+        };
+        setUser(mockUser);
+        return { success: true, user: mockUser };
+      }
+      
+      return { success: false, error: result.error?.message };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await auth.signOut();
     setUser(null);
   };
 

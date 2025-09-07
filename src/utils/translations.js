@@ -54,6 +54,32 @@ export const translations = {
     success: 'Success',
     cancel: 'Cancel',
     confirm: 'Confirm',
+    
+    // Pilgrim Portal specific
+    passGenerated: 'Pass Generated Successfully',
+    addFamilyMembers: 'Please add at least one family member',
+    selectTimeSlot: 'Please select a time slot',
+    familyMembers: 'Family Members',
+    addMember: 'Add Member',
+    mainMember: 'Main Member',
+    you: 'You',
+    fullName: 'Full Name',
+    name: 'Name',
+    aadhaar: 'Aadhaar Number', 
+    age: 'Age',
+    relation: 'Relation',
+    passId: 'Pass ID',
+    groupSize: 'Group Size', 
+    members: 'Members',
+    slotTime: 'Slot Time',
+    exitDeadline: 'Exit Deadline',
+    scanQRCode: 'Scan this QR code at entry/exit points',
+    downloadPass: 'Download Pass',
+    extendPass: 'Extend Pass',
+    additionalHours: 'Additional Hours',
+    hours: 'Hours',
+    bookTent: 'Book Tent City',
+    payAndExtend: 'Pay & Extend'
   },
   hi: {
     // Navigation

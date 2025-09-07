@@ -1,83 +1,237 @@
 import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, CreditCard, Users } from 'lucide-react';
-import { GroupMember } from '@/services/mockData';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Trash2, Plus, Download, Calendar, Users, Clock, IndianRupee, CreditCard } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { edgeFunctions, db } from '@/lib/supabase';
+import { translations } from '@/utils/translations';
 
-interface GroupBookingFormProps {
-  onBookPass: (groupMembers: GroupMember[], tentCityDays?: number) => Promise<void>;
-  selectedZone: string;
-  onZoneChange: (zoneId: string) => void;
-  zones: Array<{
-    zoneId: string;
-    zoneName: string;
-    density: number;
-    status: string;
-    currentCount: number;
-    maxCapacity: number;
-  }>;
-  isLoading: boolean;
-  language: 'en' | 'hi';
-}
-
-const GroupBookingForm: React.FC<GroupBookingFormProps> = ({
-  onBookPass,
-  selectedZone,
-  onZoneChange,
-  zones,
-  isLoading,
-  language
+const GroupBookingForm = ({ 
+  selectedZone, 
+  onZoneChange, 
+  zones, 
+  isLoading, 
+  language 
 }) => {
-  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([
-    { aadhaar: '', name: '', age: undefined, relation: 'Self' }
-  ]);
-  const [tentCityDays, setTentCityDays] = useState<number>(0);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [familyMembers, setFamilyMembers] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [generatedPass, setGeneratedPass] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showExtension, setShowExtension] = useState(false);
+  const [extensionHours, setExtensionHours] = useState(4);
+  const [tentBooking, setTentBooking] = useState(false);
 
-  const addMember = () => {
-    if (groupMembers.length < 10) {
-      setGroupMembers([...groupMembers, { aadhaar: '', name: '', age: undefined, relation: '' }]);
+  const t = (key) => translations[language][key] || key;
+
+  const addFamilyMember = () => {
+    if (familyMembers.length < 9) { // 9 + main user = 10 total
+      setFamilyMembers([...familyMembers, {
+        name: '',
+        aadhaar: '',
+        age: '',
+        relation: 'Child'
+      }]);
     }
   };
 
-  const removeMember = (index: number) => {
-    if (groupMembers.length > 1) {
-      setGroupMembers(groupMembers.filter((_, i) => i !== index));
-    }
+  const removeFamilyMember = (index) => {
+    setFamilyMembers(familyMembers.filter((_, i) => i !== index));
   };
 
-  const updateMember = (index: number, field: keyof GroupMember, value: string | number) => {
-    const updated = groupMembers.map((member, i) => 
+  const updateFamilyMember = (index, field, value) => {
+    const updated = familyMembers.map((member, i) => 
       i === index ? { ...member, [field]: value } : member
     );
-    setGroupMembers(updated);
+    setFamilyMembers(updated);
   };
 
-  const formatAadhaar = (value: string) => {
+  const formatAadhaar = (value) => {
     const digits = value.replace(/\D/g, '').slice(0, 12);
     return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
   };
 
-  const isValidGroup = () => {
-    return groupMembers.every(member => 
-      member.aadhaar.replace(/\s/g, '').length === 12 && 
-      member.name.trim().length > 0
-    ) && selectedZone;
+  const generateTimeSlots = () => {
+    const slots = [];
+    const now = new Date();
+    
+    for (let i = 1; i <= 7; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() + i);
+      
+      // Morning, Afternoon, Evening slots
+      const morningSlot = new Date(date);
+      morningSlot.setHours(6, 0, 0, 0);
+      
+      const afternoonSlot = new Date(date);
+      afternoonSlot.setHours(12, 0, 0, 0);
+      
+      const eveningSlot = new Date(date);
+      eveningSlot.setHours(18, 0, 0, 0);
+      
+      slots.push(
+        { time: morningSlot, label: `${date.toDateString()} - Morning (6:00 AM)` },
+        { time: afternoonSlot, label: `${date.toDateString()} - Afternoon (12:00 PM)` },
+        { time: eveningSlot, label: `${date.toDateString()} - Evening (6:00 PM)` }
+      );
+    }
+    
+    return slots;
   };
 
-  const handleSubmit = async () => {
-    if (isValidGroup()) {
-      await onBookPass(groupMembers, tentCityDays > 0 ? tentCityDays : undefined);
+  const generatePass = async () => {
+    if (familyMembers.length === 0) {
+      toast({
+        title: t('error'),
+        description: t('addFamilyMembers'),
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedSlot) {
+      toast({
+        title: t('error'),
+        description: t('selectTimeSlot'),
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedZone) {
+      toast({
+        title: t('error'),
+        description: 'Please select a zone',
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      // Prepare pass data
+      const passData = {
+        aadhaar_number: user.aadhaar,
+        full_name: user.name,
+        phone: user.mobile,
+        family_members: familyMembers,
+        slot_start: selectedSlot.toISOString(),
+        slot_duration_hours: 24
+      };
+
+      // Generate pass using Supabase edge function
+      const { data, error } = await edgeFunctions.generatePass(passData);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data) {
+        setGeneratedPass({
+          passId: data.pass_id,
+          qrCode: data.qr_code,
+          slotTime: new Date(data.slot_start),
+          exitDeadline: new Date(data.exit_deadline),
+          groupSize: data.group_size,
+          status: 'active'
+        });
+
+        toast({
+          title: t('passGenerated'),
+          description: `Pass ID: ${data.pass_id}`,
+        });
+
+        // Reset form
+        setFamilyMembers([]);
+        setSelectedSlot(null);
+      }
+    } catch (error) {
+      console.error('Pass generation failed:', error);
+      toast({
+        title: t('error'),
+        description: error.message || 'Pass generation failed',
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const totalCost = () => {
-    const baseCost = 0; // Free entry
-    const tentCost = tentCityDays * 500 * groupMembers.length;
-    return baseCost + tentCost;
+  const extendPass = async () => {
+    if (!generatedPass) return;
+
+    try {
+      const { data, error } = await edgeFunctions.extendPass(
+        generatedPass.passId,
+        extensionHours,
+        tentBooking
+      );
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data) {
+        setGeneratedPass(prev => ({
+          ...prev,
+          exitDeadline: new Date(data.new_exit_deadline)
+        }));
+
+        toast({
+          title: 'Extension Successful',
+          description: `New deadline: ${new Date(data.new_exit_deadline).toLocaleString()} | Charged: ₹${data.amount_charged}`,
+        });
+
+        setShowExtension(false);
+        setExtensionHours(4);
+        setTentBooking(false);
+      }
+    } catch (error) {
+      toast({
+        title: t('error'),
+        description: error.message || 'Extension failed',
+        variant: "destructive"
+      });
+    }
+  };
+
+  const downloadPass = () => {
+    if (!generatedPass) return;
+    
+    const passData = {
+      passId: generatedPass.passId,
+      holderName: user.name,
+      aadhaar: user.aadhaar,
+      groupSize: generatedPass.groupSize,
+      slotTime: generatedPass.slotTime.toLocaleString(),
+      exitDeadline: generatedPass.exitDeadline.toLocaleString(),
+      qrCode: generatedPass.qrCode
+    };
+
+    const dataStr = JSON.stringify(passData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `simhastha_pass_${generatedPass.passId}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const isValidForm = () => {
+    return familyMembers.every(member => 
+      member.aadhaar.replace(/\s/g, '').length === 12 && 
+      member.name.trim().length > 0
+    ) && selectedSlot && selectedZone;
   };
 
   return (
@@ -128,8 +282,8 @@ const GroupBookingForm: React.FC<GroupBookingFormProps> = ({
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {language === 'en' 
-                        ? '72-hour pass duration with automatic penalty for overstay'
-                        : '72 घंटे की पास अवधि, अधिक रुकने पर स्वचालित जुर्माना'
+                        ? '24-hour pass duration with automatic penalty for overstay'
+                        : '24 घंटे की पास अवधि, अधिक रुकने पर स्वचालित जुर्माना'
                       }
                     </p>
                   </div>
@@ -140,109 +294,133 @@ const GroupBookingForm: React.FC<GroupBookingFormProps> = ({
         </CardContent>
       </Card>
 
-      {/* Group Members */}
-      <Card className="shadow-medium">
+      {/* Time Slot Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            {t('selectTimeSlot')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {generateTimeSlots().map((slot, index) => (
+              <Button
+                key={index}
+                variant={selectedSlot?.getTime() === slot.time.getTime() ? "default" : "outline"}
+                className="p-4 h-auto text-left"
+                onClick={() => setSelectedSlot(slot.time)}
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium">{slot.label}</span>
+                  <span className="text-xs opacity-70">
+                    {language === 'en' ? 'Available' : 'उपलब्ध'}
+                  </span>
+                </div>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Family Members */}
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              {language === 'en' ? 'Group Members' : 'समूह के सदस्य'} ({groupMembers.length}/10)
+              {t('familyMembers')} ({familyMembers.length}/9)
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={addMember}
-              disabled={groupMembers.length >= 10}
+              onClick={addFamilyMember}
+              disabled={familyMembers.length >= 9}
             >
               <Plus className="w-4 h-4 mr-1" />
-              {language === 'en' ? 'Add Member' : 'सदस्य जोड़ें'}
+              {t('addMember')}
             </Button>
           </CardTitle>
           <CardDescription>
             {language === 'en' 
-              ? 'Add up to 10 family members with their Aadhaar details'
-              : 'अपने परिवार के 10 सदस्यों तक के आधार विवरण के साथ जोड़ें'
+              ? 'Add up to 9 family members (10 total including you)'
+              : 'अधिकतम 9 परिवारजन जोड़ें (आपसहित कुल 10)'
             }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {groupMembers.map((member, index) => (
+          {/* Main Member Info */}
+          <div className="p-4 border rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2 mb-2">
+              <h4 className="font-medium">{t('mainMember')}</h4>
+              <Badge variant="secondary">{t('you')}</Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">{t('name')}: </span>
+                <span className="font-medium">{user?.name}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">{t('aadhaar')}: </span>
+                <span className="font-medium">{user?.aadhaar}</span>
+              </div>
+            </div>
+          </div>
+
+          {familyMembers.map((member, index) => (
             <div key={index} className="p-4 border rounded-lg space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium">
-                  {language === 'en' ? `Member ${index + 1}` : `सदस्य ${index + 1}`}
-                  {index === 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {language === 'en' ? 'Main' : 'मुख्य'}
-                    </Badge>
-                  )}
+                  {language === 'en' ? `Family Member ${index + 1}` : `परिवारजन ${index + 1}`}
                 </h4>
-                {index > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeMember(index)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeFamilyMember(index)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor={`name-${index}`}>
-                    {language === 'en' ? 'Full Name' : 'पूरा नाम'} *
-                  </Label>
+                  <Label>{t('fullName')} *</Label>
                   <Input
-                    id={`name-${index}`}
                     value={member.name}
-                    onChange={(e) => updateMember(index, 'name', e.target.value)}
+                    onChange={(e) => updateFamilyMember(index, 'name', e.target.value)}
                     placeholder={language === 'en' ? 'Enter full name' : 'पूरा नाम दर्ज करें'}
-                    required
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor={`aadhaar-${index}`}>
-                    {language === 'en' ? 'Aadhaar Number' : 'आधार संख्या'} *
-                  </Label>
+                  <Label>{t('aadhaar')} *</Label>
                   <Input
-                    id={`aadhaar-${index}`}
                     value={member.aadhaar}
-                    onChange={(e) => updateMember(index, 'aadhaar', formatAadhaar(e.target.value))}
+                    onChange={(e) => updateFamilyMember(index, 'aadhaar', formatAadhaar(e.target.value))}
                     placeholder="1234 5678 9012"
-                    required
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor={`age-${index}`}>
-                    {language === 'en' ? 'Age' : 'आयु'}
-                  </Label>
+                  <Label>{t('age')}</Label>
                   <Input
-                    id={`age-${index}`}
                     type="number"
-                    value={member.age || ''}
-                    onChange={(e) => updateMember(index, 'age', parseInt(e.target.value))}
+                    value={member.age}
+                    onChange={(e) => updateFamilyMember(index, 'age', e.target.value)}
                     placeholder="25"
-                    min="1"
-                    max="120"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor={`relation-${index}`}>
-                    {language === 'en' ? 'Relation' : 'रिश्ता'}
-                  </Label>
+                  <Label>{t('relation')}</Label>
                   <Select 
-                    value={member.relation || ''} 
-                    onValueChange={(value) => updateMember(index, 'relation', value)}
+                    value={member.relation} 
+                    onValueChange={(value) => updateFamilyMember(index, 'relation', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={language === 'en' ? 'Select relation' : 'रिश्ता चुनें'} />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Self">{language === 'en' ? 'Self' : 'स्वयं'}</SelectItem>
                       <SelectItem value="Spouse">{language === 'en' ? 'Spouse' : 'पति/पत्नी'}</SelectItem>
                       <SelectItem value="Child">{language === 'en' ? 'Child' : 'बच्चा'}</SelectItem>
                       <SelectItem value="Parent">{language === 'en' ? 'Parent' : 'माता-पिता'}</SelectItem>
@@ -257,94 +435,141 @@ const GroupBookingForm: React.FC<GroupBookingFormProps> = ({
         </CardContent>
       </Card>
 
-      {/* Tent City Extension */}
-      <Card className="shadow-medium">
-        <CardHeader>
-          <CardTitle>
-            {language === 'en' ? 'Tent City Extension (Optional)' : 'टेंट सिटी विस्तार (वैकल्पिक)'}
-          </CardTitle>
-          <CardDescription>
-            {language === 'en' 
-              ? 'Extend your stay in premium tent accommodations (₹500/person/day)'
-              : 'प्रीमियम टेंट आवास में अपना प्रवास बढ़ाएं (₹500/व्यक्ति/दिन)'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <Label htmlFor="tent-days">
-              {language === 'en' ? 'Additional Days' : 'अतिरिक्त दिन'} (0-7)
-            </Label>
-            <Input
-              id="tent-days"
-              type="number"
-              value={tentCityDays}
-              onChange={(e) => setTentCityDays(Math.max(0, Math.min(7, parseInt(e.target.value) || 0)))}
-              min="0"
-              max="7"
-              placeholder="0"
-            />
-            {tentCityDays > 0 && (
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  {language === 'en' 
-                    ? `Additional cost: ₹${tentCityDays * 500 * groupMembers.length} for ${tentCityDays} days (${groupMembers.length} members)`
-                    : `अतिरिक्त लागत: ₹${tentCityDays * 500 * groupMembers.length} ${tentCityDays} दिनों के लिए (${groupMembers.length} सदस्य)`
-                  }
-                </p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Generate Pass Button */}
+      <Button
+        onClick={generatePass}
+        disabled={!isValidForm() || isGenerating}
+        className="w-full"
+        size="lg"
+      >
+        {isGenerating 
+          ? (language === 'en' ? 'Generating Pass...' : 'पास बना रहे हैं...')
+          : (language === 'en' ? 'Generate Digital Pass' : 'डिजिटल पास बनाएं')
+        }
+      </Button>
 
-      {/* Cost Summary & Book Button */}
-      <Card className="shadow-medium border-primary/20">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center text-lg font-semibold">
-              <span>{language === 'en' ? 'Total Cost' : 'कुल लागत'}</span>
-              <span className="text-primary">₹{totalCost()}</span>
-            </div>
-            
-            <div className="text-sm text-muted-foreground space-y-1">
-              <div className="flex justify-between">
-                <span>{language === 'en' ? 'Entry Pass' : 'प्रवेश पास'} ({groupMembers.length} {language === 'en' ? 'members' : 'सदस्य'})</span>
-                <span>{language === 'en' ? 'FREE' : 'मुफ्त'}</span>
+      {/* Generated Pass Display */}
+      {generatedPass && (
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-800">
+              <Badge className="bg-green-100 text-green-800">
+                {t('passGenerated')}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="text-sm">
+                  <span className="font-medium">{t('passId')}: </span>
+                  <span className="font-mono">{generatedPass.passId}</span>
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium">{t('groupSize')}: </span>
+                  <span>{generatedPass.groupSize} {t('members')}</span>
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium">{t('slotTime')}: </span>
+                  <span>{generatedPass.slotTime.toLocaleString()}</span>
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium">{t('exitDeadline')}: </span>
+                  <span className="text-red-600 font-medium">
+                    {generatedPass.exitDeadline.toLocaleString()}
+                  </span>
+                </div>
               </div>
-              {tentCityDays > 0 && (
-                <div className="flex justify-between">
-                  <span>{language === 'en' ? 'Tent City Extension' : 'टेंट सिटी विस्तार'}</span>
-                  <span>₹{tentCityDays * 500 * groupMembers.length}</span>
+              
+              {generatedPass.qrCode && (
+                <div className="flex flex-col items-center">
+                  <img 
+                    src={generatedPass.qrCode} 
+                    alt="QR Code" 
+                    className="w-32 h-32 border border-gray-300 rounded"
+                  />
+                  <p className="text-xs text-center mt-2 text-muted-foreground">
+                    {t('scanQRCode')}
+                  </p>
                 </div>
               )}
             </div>
 
-            <div className="pt-4 border-t">
-              {totalCost() > 0 && (
-                <p className="text-xs text-muted-foreground mb-3">
-                  {language === 'en' 
-                    ? 'Amount will be auto-deducted from Aadhaar-linked bank account'
-                    : 'राशि आधार से जुड़े बैंक खाते से स्वचालित रूप से काट ली जाएगी'
-                  }
-                </p>
-              )}
-
-              <Button
-                variant="hero"
-                onClick={handleSubmit}
-                disabled={!isValidGroup() || isLoading}
-                className="w-full"
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                variant="outline" 
+                onClick={downloadPass}
+                className="flex-1"
               >
-                {isLoading 
-                  ? (language === 'en' ? 'Booking...' : 'बुकिंग...')
-                  : (language === 'en' ? 'Book Group Pass' : 'समूह पास बुक करें')
-                }
+                <Download className="w-4 h-4 mr-2" />
+                {t('downloadPass')}
+              </Button>
+              
+              <Button 
+                variant="secondary" 
+                onClick={() => setShowExtension(true)}
+                className="flex-1"
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                {t('extendPass')}
               </Button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+
+            {showExtension && (
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle className="text-lg">{t('extendPass')}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t('additionalHours')}</Label>
+                      <Select 
+                        value={extensionHours.toString()} 
+                        onValueChange={(value) => setExtensionHours(parseInt(value))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="4">4 {t('hours')} - ₹400</SelectItem>
+                          <SelectItem value="8">8 {t('hours')} - ₹800</SelectItem>
+                          <SelectItem value="12">12 {t('hours')} - ₹1200</SelectItem>
+                          <SelectItem value="24">24 {t('hours')} - ₹2400</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={tentBooking}
+                          onChange={(e) => setTentBooking(e.target.checked)}
+                        />
+                        {t('bookTent')} (+₹2000)
+                      </Label>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button onClick={extendPass} className="flex-1">
+                      <IndianRupee className="w-4 h-4 mr-2" />
+                      {t('payAndExtend')} ₹{extensionHours * 100 + (tentBooking ? 2000 : 0)}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowExtension(false)}
+                    >
+                      {t('cancel')}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
