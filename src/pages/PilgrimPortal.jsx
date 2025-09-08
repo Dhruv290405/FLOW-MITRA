@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/utils/translations';
-import { generatePass, getUserPasses, getUserPenalties, mockZones, type Pass, type Penalty, type GroupMember } from '@/services/mockData';
+import { generatePass, getUserPasses, getUserPenalties, mockZones } from '@/services/mockData';
 import { QrCode, CreditCard, Download, Clock, MapPin, AlertTriangle, CheckCircle, Plus, Users } from 'lucide-react';
 import GroupBookingForm from '@/components/GroupBookingForm';
 import { toast } from '@/hooks/use-toast';

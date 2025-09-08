@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/utils/translations';
-import { getCrowdData, getAlerts, type CrowdData, type Alert } from '@/services/mockData';
+import { getCrowdData, getAlerts } from '@/services/mockData';
 import { 
   Users, 
   AlertTriangle, 
