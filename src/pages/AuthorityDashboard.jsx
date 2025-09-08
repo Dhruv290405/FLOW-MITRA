@@ -220,7 +220,7 @@ const AuthorityDashboard = () => {
                           <div className="text-lg font-bold">{Math.round(zone.density)}%</div>
                           <div className="text-xs text-muted-foreground">capacity</div>
                         </div>
-                        <Badge variant={getStatusColor(zone.status) as any}>
+                        <Badge variant={getStatusColor(zone.status)}>
                           {zone.status}
                         </Badge>
                       </div>
@@ -283,7 +283,7 @@ const AuthorityDashboard = () => {
                           ) : (
                             <XCircle className="w-4 h-4 text-destructive" />
                           )}
-                          <Badge variant={getAlertSeverityColor(alert.severity) as any} className="text-xs">
+                          <Badge variant={getAlertSeverityColor(alert.severity)} className="text-xs">
                             {alert.severity}
                           </Badge>
                         </div>

@@ -103,7 +103,7 @@ const LoginPage = () => {
               {/* Role Selection */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">{t('selectRole')}</Label>
-                <RadioGroup value={role} onValueChange={(value) => setRole(value as 'pilgrim' | 'authority')}>
+                <RadioGroup value={role} onValueChange={(value) => setRole(value)}>
                   <div className="flex items-center space-x-2 p-3 rounded-lg border border-border hover:bg-muted/50 transition-smooth">
                     <RadioGroupItem value="pilgrim" id="pilgrim" />
                     <div className="flex items-center space-x-3 flex-1">
