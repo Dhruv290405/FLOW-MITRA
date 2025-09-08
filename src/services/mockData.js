@@ -1,63 +1,7 @@
 // Mock data service for the prototype
 
-export interface CrowdData {
-  zoneId: string;
-  zoneName: string;
-  currentCount: number;
-  maxCapacity: number;
-  density: number;
-  status: 'normal' | 'warning' | 'critical';
-  lastUpdated: Date;
-}
-
-export interface GroupMember {
-  aadhaar: string;
-  name: string;
-  age?: number;
-  relation?: string;
-}
-
-export interface Pass {
-  id: string;
-  userId: string;
-  zoneId: string;
-  zoneName: string;
-  entryTime: Date;
-  exitDeadline: Date;
-  exitTime?: Date;
-  status: 'active' | 'used' | 'expired' | 'overstay';
-  qrCode: string;
-  groupSize: number;
-  groupMembers: GroupMember[];
-  tentCityDays?: number;
-  extraCharges?: number;
-}
-
-export interface Alert {
-  id: string;
-  zoneId: string;
-  zoneName: string;
-  type: 'capacity' | 'emergency' | 'fraud' | 'system';
-  message: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  timestamp: Date;
-  resolved: boolean;
-}
-
-export interface Penalty {
-  id: string;
-  userId: string;
-  passId: string;
-  amount: number;
-  reason: string;
-  dateIssued: Date;
-  status: 'pending' | 'paid' | 'auto_deducted';
-  smsAlertSent: boolean;
-  overstayHours: number;
-}
-
 // Mock zones for Mahakumbh
-export const mockZones: CrowdData[] = [
+export const mockZones = [
   {
     zoneId: 'zone_1',
     zoneName: 'Sangam Ghat',
@@ -106,7 +50,7 @@ export const mockZones: CrowdData[] = [
 ];
 
 // Generate random crowd data updates
-export const generateLiveCrowdData = (): CrowdData[] => {
+export const generateLiveCrowdData = () => {
   return mockZones.map(zone => {
     const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
     const newCount = Math.max(0, Math.min(zone.maxCapacity, 
@@ -114,7 +58,7 @@ export const generateLiveCrowdData = (): CrowdData[] => {
     ));
     const newDensity = (newCount / zone.maxCapacity) * 100;
     
-    let status: 'normal' | 'warning' | 'critical' = 'normal';
+    let status = 'normal';
     if (newDensity >= 90) status = 'critical';
     else if (newDensity >= 75) status = 'warning';
     
@@ -129,7 +73,7 @@ export const generateLiveCrowdData = (): CrowdData[] => {
 };
 
 // Mock alerts
-export const generateMockAlerts = (): Alert[] => {
+export const generateMockAlerts = () => {
   const alertMessages = [
     'Zone 5 nearing capacity - consider redirecting pilgrims',
     'Unusual crowd pattern detected in Sangam Ghat',
@@ -142,34 +86,34 @@ export const generateMockAlerts = (): Alert[] => {
     id: `alert_${Date.now()}_${index}`,
     zoneId: mockZones[index % mockZones.length].zoneId,
     zoneName: mockZones[index % mockZones.length].zoneName,
-    type: ['capacity', 'emergency', 'fraud', 'system'][index % 4] as any,
+    type: ['capacity', 'emergency', 'fraud', 'system'][index % 4],
     message,
-    severity: ['high', 'critical', 'medium', 'low'][index % 4] as any,
+    severity: ['high', 'critical', 'medium', 'low'][index % 4],
     timestamp: new Date(Date.now() - Math.random() * 3600000),
     resolved: Math.random() > 0.7,
   }));
 };
 
 // Generate QR code data
-export const generateQRCode = (passId: string): string => {
+export const generateQRCode = (passId) => {
   return `MAHAKUMBH2028_${passId}_${Date.now()}`;
 };
 
 // Mock pass generation
-export let mockPasses: Pass[] = [];
+export let mockPasses = [];
 
 export const generatePass = (
-  userId: string, 
-  zoneId: string, 
-  zoneName: string, 
-  groupMembers: GroupMember[],
-  tentCityDays?: number
-): Pass => {
+  userId, 
+  zoneId, 
+  zoneName, 
+  groupMembers,
+  tentCityDays
+) => {
   const now = new Date();
   const exitDeadline = new Date(now.getTime() + (72 * 60 * 60 * 1000)); // 3 days default
   const passId = `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
   
-  const pass: Pass = {
+  const pass = {
     id: passId,
     userId,
     zoneId,
@@ -189,7 +133,7 @@ export const generatePass = (
 };
 
 // Mock penalties
-export const mockPenalties: Penalty[] = [
+export const mockPenalties = [
   {
     id: 'penalty_1',
     userId: 'user_123',
@@ -215,7 +159,7 @@ export const mockPenalties: Penalty[] = [
 ];
 
 // Service functions
-export const getCrowdData = (): Promise<CrowdData[]> => {
+export const getCrowdData = () => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(generateLiveCrowdData());
@@ -223,7 +167,7 @@ export const getCrowdData = (): Promise<CrowdData[]> => {
   });
 };
 
-export const getAlerts = (): Promise<Alert[]> => {
+export const getAlerts = () => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(generateMockAlerts());
@@ -231,7 +175,7 @@ export const getAlerts = (): Promise<Alert[]> => {
   });
 };
 
-export const getUserPasses = (userId: string): Promise<Pass[]> => {
+export const getUserPasses = (userId) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(mockPasses.filter(pass => pass.userId === userId));
@@ -239,7 +183,7 @@ export const getUserPasses = (userId: string): Promise<Pass[]> => {
   });
 };
 
-export const getUserPenalties = (userId: string): Promise<Penalty[]> => {
+export const getUserPenalties = (userId) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(mockPenalties.filter(penalty => penalty.userId === userId));
