@@ -1,25 +1,5 @@
-export interface FraudAlert {
-  id: string;
-  type: 'duplicate_aadhaar' | 'fake_document' | 'suspicious_activity' | 'multiple_bookings';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  aadhaar: string;
-  details: string;
-  timestamp: Date;
-  resolved: boolean;
-  actionTaken?: string;
-}
-
-export interface AadhaarValidation {
-  isValid: boolean;
-  exists: boolean;
-  linkedMobile?: string;
-  linkedBank?: string;
-  previousBookings?: number;
-  riskScore: number;
-}
-
 // Mock fraud detection system
-export const validateAadhaar = async (aadhaar: string): Promise<AadhaarValidation> => {
+export const validateAadhaar = async (aadhaar) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       // Simulate Aadhaar validation
@@ -40,10 +20,10 @@ export const validateAadhaar = async (aadhaar: string): Promise<AadhaarValidatio
   });
 };
 
-export const checkForDuplicateBookings = async (aadhaar: string): Promise<FraudAlert[]> => {
+export const checkForDuplicateBookings = async (aadhaar) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const alerts: FraudAlert[] = [];
+      const alerts = [];
       
       // Simulate duplicate detection
       if (Math.random() > 0.9) {
@@ -76,10 +56,10 @@ export const checkForDuplicateBookings = async (aadhaar: string): Promise<FraudA
   });
 };
 
-export const getFraudAlerts = async (): Promise<FraudAlert[]> => {
+export const getFraudAlerts = async () => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const alerts: FraudAlert[] = [
+      const alerts = [
         {
           id: 'FRAUD_001',
           type: 'duplicate_aadhaar',

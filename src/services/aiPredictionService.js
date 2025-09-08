@@ -1,28 +1,13 @@
-export interface MLPrediction {
-  modelType: 'crowd_density' | 'safety_risk' | 'flow_prediction' | 'demand_forecast';
-  prediction: number;
-  confidence: number;
-  factors: string[];
-  recommendation: string;
-}
-
-export interface CrowdPredictionModel {
-  predictDensity: (zoneId: string, timeSlot: number) => Promise<MLPrediction>;
-  predictSafetyRisk: (zoneId: string, currentDensity: number) => Promise<MLPrediction>;
-  predictFlowPattern: (historicalData: any[]) => Promise<MLPrediction>;
-  predictDemand: (eventTime: Date, weatherData?: any) => Promise<MLPrediction>;
-}
-
 // Mock TensorFlow/PyTorch-like ML model simulation
-export class CrowdPredictionEngine implements CrowdPredictionModel {
-  private trainedModels: Map<string, any> = new Map();
+export class CrowdPredictionEngine {
+  trainedModels = new Map();
   
   constructor() {
     // Initialize mock trained models
     this.initializeModels();
   }
   
-  private initializeModels() {
+  initializeModels() {
     // Mock model weights and parameters
     this.trainedModels.set('density_model', {
       weights: Array.from({length: 50}, () => Math.random()),
@@ -43,7 +28,7 @@ export class CrowdPredictionEngine implements CrowdPredictionModel {
     });
   }
   
-  async predictDensity(zoneId: string, timeSlot: number): Promise<MLPrediction> {
+  async predictDensity(zoneId, timeSlot) {
     return new Promise((resolve) => {
       setTimeout(() => {
         const model = this.trainedModels.get('density_model');
@@ -80,7 +65,7 @@ export class CrowdPredictionEngine implements CrowdPredictionModel {
     });
   }
   
-  async predictSafetyRisk(zoneId: string, currentDensity: number): Promise<MLPrediction> {
+  async predictSafetyRisk(zoneId, currentDensity) {
     return new Promise((resolve) => {
       setTimeout(() => {
         const model = this.trainedModels.get('safety_model');
@@ -112,7 +97,7 @@ export class CrowdPredictionEngine implements CrowdPredictionModel {
     });
   }
   
-  async predictFlowPattern(historicalData: any[]): Promise<MLPrediction> {
+  async predictFlowPattern(historicalData) {
     return new Promise((resolve) => {
       setTimeout(() => {
         const model = this.trainedModels.get('flow_model');
@@ -143,7 +128,7 @@ export class CrowdPredictionEngine implements CrowdPredictionModel {
     });
   }
   
-  async predictDemand(eventTime: Date, weatherData?: any): Promise<MLPrediction> {
+  async predictDemand(eventTime, weatherData) {
     return new Promise((resolve) => {
       setTimeout(() => {
         const hour = eventTime.getHours();

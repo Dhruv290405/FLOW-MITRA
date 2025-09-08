@@ -1,48 +1,10 @@
 // Mock YOLO v8n integration for crowd counting
-export interface CameraFeed {
-  id: string;
-  zoneId: string;
-  zoneName: string;
-  cameraName: string;
-  location: string;
-  status: 'active' | 'inactive' | 'error';
-  personCount: number;
-  confidence: number;
-  lastUpdate: Date;
-  bufferZoneAlert: boolean;
-}
-
-export interface PersonDetection {
-  id: string;
-  cameraId: string;
-  boundingBox: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  confidence: number;
-  timestamp: Date;
-}
-
-export interface CrowdAnalytics {
-  zoneId: string;
-  totalPeople: number;
-  averageConfidence: number;
-  bufferZoneCount: number;
-  criticalAreas: string[];
-  predictions: {
-    nextHourCount: number;
-    peakTime: Date;
-    riskLevel: 'low' | 'medium' | 'high' | 'critical';
-  };
-}
 
 // Mock camera feeds for different zones
-export const getCameraFeeds = async (): Promise<CameraFeed[]> => {
+export const getCameraFeeds = async () => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const feeds: CameraFeed[] = [
+      const feeds = [
         {
           id: 'CAM_001',
           zoneId: 'zone_1',
@@ -110,10 +72,10 @@ export const getCameraFeeds = async (): Promise<CameraFeed[]> => {
 };
 
 // Mock YOLO v8n person detection
-export const detectPersons = async (cameraId: string): Promise<PersonDetection[]> => {
+export const detectPersons = async (cameraId) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const detections: PersonDetection[] = [];
+      const detections = [];
       const personCount = Math.floor(Math.random() * 20) + 5;
       
       for (let i = 0; i < personCount; i++) {
@@ -137,12 +99,12 @@ export const detectPersons = async (cameraId: string): Promise<PersonDetection[]
 };
 
 // AI-powered crowd analytics and predictions
-export const getCrowdAnalytics = async (zoneId: string): Promise<CrowdAnalytics> => {
+export const getCrowdAnalytics = async (zoneId) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       const totalPeople = Math.floor(Math.random() * 1000) + 200;
       const bufferZoneCount = Math.floor(totalPeople * 0.15); // 15% in buffer zone
-      const criticalAreas: string[] = [];
+      const criticalAreas = [];
       
       // Determine critical areas based on crowd density
       if (totalPeople > 800) {
@@ -152,12 +114,12 @@ export const getCrowdAnalytics = async (zoneId: string): Promise<CrowdAnalytics>
         criticalAreas.push('Buffer Zone Overflow');
       }
       
-      const riskLevel: CrowdAnalytics['predictions']['riskLevel'] = 
+      const riskLevel = 
         totalPeople > 900 ? 'critical' :
         totalPeople > 700 ? 'high' :
         totalPeople > 400 ? 'medium' : 'low';
       
-      const analytics: CrowdAnalytics = {
+      const analytics = {
         zoneId,
         totalPeople,
         averageConfidence: 0.91,
@@ -176,7 +138,7 @@ export const getCrowdAnalytics = async (zoneId: string): Promise<CrowdAnalytics>
 };
 
 // Buffer zone monitoring
-export const getBufferZoneAlerts = async (): Promise<any[]> => {
+export const getBufferZoneAlerts = async () => {
   return new Promise((resolve) => {
     setTimeout(() => {
       const alerts = [

@@ -1,40 +1,10 @@
-export interface CrowdFlowData {
-  zoneId: string;
-  currentDensity: number;
-  predictedDensity: number;
-  flowDirection: 'in' | 'out' | 'stable';
-  bottleneckRisk: number;
-  recommendedActions: string[];
-}
-
-export interface RouteSuggestion {
-  routeId: string;
-  zonePath: string[];
-  estimatedTime: number;
-  crowdLevel: 'low' | 'medium' | 'high';
-  dynamicPricing: number;
-  alternativeRoutes: string[];
-}
-
-export interface PredictiveAlert {
-  id: string;
-  type: 'congestion' | 'safety' | 'capacity' | 'emergency';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  zone: string;
-  prediction: string;
-  confidence: number;
-  timeToOccur: number; // minutes
-  suggestedActions: string[];
-  timestamp: Date;
-}
-
 // Advanced crowd flow prediction using mock ML algorithms
-export const calculateCrowdFlow = async (historicalData: any[]): Promise<CrowdFlowData[]> => {
+export const calculateCrowdFlow = async (historicalData) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       const zones = ['Zone_A', 'Zone_B', 'Zone_C', 'Zone_D', 'Zone_E', 'Buffer_1', 'Buffer_2'];
       
-      const flowData: CrowdFlowData[] = zones.map(zoneId => {
+      const flowData = zones.map(zoneId => {
         const currentDensity = Math.random() * 100;
         const trendFactor = (Math.random() - 0.5) * 20;
         const predictedDensity = Math.max(0, Math.min(100, currentDensity + trendFactor));
@@ -63,12 +33,12 @@ export const calculateCrowdFlow = async (historicalData: any[]): Promise<CrowdFl
   });
 };
 
-export const generateDynamicRoutes = async (destination: string, crowdData: CrowdFlowData[]): Promise<RouteSuggestion[]> => {
+export const generateDynamicRoutes = async (destination, crowdData) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       const basePrice = 50; // Base pass price in INR
       
-      const routes: RouteSuggestion[] = [
+      const routes = [
         {
           routeId: 'ROUTE_OPTIMAL',
           zonePath: ['Entry_Gate_1', 'Zone_A', 'Zone_B', destination],
@@ -118,10 +88,10 @@ export const generateDynamicRoutes = async (destination: string, crowdData: Crow
   });
 };
 
-export const generatePredictiveAlerts = async (crowdData: CrowdFlowData[]): Promise<PredictiveAlert[]> => {
+export const generatePredictiveAlerts = async (crowdData) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const alerts: PredictiveAlert[] = [];
+      const alerts = [];
       
       crowdData.forEach(zone => {
         // Congestion prediction

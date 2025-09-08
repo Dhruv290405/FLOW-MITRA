@@ -1,22 +1,5 @@
-export interface SMSTemplate {
-  id: string;
-  type: 'penalty' | 'reminder' | 'extension' | 'welcome' | 'exit_warning';
-  language: 'en' | 'hi';
-  template: string;
-}
-
-export interface SMSAlert {
-  id: string;
-  mobile: string;
-  message: string;
-  type: string;
-  status: 'sent' | 'delivered' | 'failed' | 'pending';
-  timestamp: Date;
-  language: 'en' | 'hi';
-}
-
 // SMS Templates for different scenarios
-const smsTemplates: SMSTemplate[] = [
+const smsTemplates = [
   {
     id: 'penalty_en',
     type: 'penalty',
@@ -57,11 +40,11 @@ const smsTemplates: SMSTemplate[] = [
 
 // Mock SMS service
 export const sendSMS = async (
-  mobile: string, 
-  templateType: SMSTemplate['type'], 
-  language: 'en' | 'hi',
-  variables: Record<string, string>
-): Promise<SMSAlert> => {
+  mobile, 
+  templateType, 
+  language,
+  variables
+) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       const template = smsTemplates.find(t => t.type === templateType && t.language === language);
@@ -72,7 +55,7 @@ export const sendSMS = async (
         message = message.replace(`{${key}}`, value);
       });
       
-      const smsAlert: SMSAlert = {
+      const smsAlert = {
         id: `SMS_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
         mobile,
         message,
@@ -87,10 +70,10 @@ export const sendSMS = async (
   });
 };
 
-export const getSMSHistory = async (): Promise<SMSAlert[]> => {
+export const getSMSHistory = async () => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const history: SMSAlert[] = [
+      const history = [
         {
           id: 'SMS_001',
           mobile: '9876543210',
@@ -125,27 +108,18 @@ export const getSMSHistory = async (): Promise<SMSAlert[]> => {
 };
 
 // IVR System simulation
-export interface IVRCall {
-  id: string;
-  mobile: string;
-  language: 'en' | 'hi';
-  message: string;
-  status: 'completed' | 'busy' | 'no_answer' | 'failed';
-  duration: number; // in seconds
-  timestamp: Date;
-}
 
 export const makeIVRCall = async (
-  mobile: string,
-  message: string,
-  language: 'en' | 'hi'
-): Promise<IVRCall> => {
+  mobile,
+  message,
+  language
+) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const statuses: IVRCall['status'][] = ['completed', 'busy', 'no_answer', 'failed'];
+      const statuses = ['completed', 'busy', 'no_answer', 'failed'];
       const status = statuses[Math.floor(Math.random() * statuses.length)];
       
-      const call: IVRCall = {
+      const call = {
         id: `IVR_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
         mobile,
         language,

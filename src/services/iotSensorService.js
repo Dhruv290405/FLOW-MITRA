@@ -1,63 +1,15 @@
-export interface IoTSensor {
-  sensorId: string;
-  type: 'people_counter' | 'rfid_reader' | 'qr_scanner' | 'thermal_camera' | 'sound_monitor';
-  location: string;
-  zone: string;
-  status: 'active' | 'inactive' | 'maintenance' | 'error';
-  lastReading: Date;
-  batteryLevel?: number;
-  connectivity: 'online' | 'offline';
-}
-
-export interface SensorReading {
-  sensorId: string;
-  timestamp: Date;
-  data: {
-    count?: number;
-    temperature?: number;
-    soundLevel?: number;
-    qrCode?: string;
-    rfidTag?: string;
-    yoloDetections?: YOLODetection[];
-  };
-  confidence: number;
-}
-
-export interface YOLODetection {
-  class: 'person' | 'vehicle' | 'baggage';
-  confidence: number;
-  boundingBox: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  zone: string;
-}
-
-export interface RealTimeData {
-  zoneId: string;
-  currentCount: number;
-  entryRate: number; // people per minute
-  exitRate: number;
-  avgDwellTime: number; // minutes
-  alerts: string[];
-  sensorHealth: number; // percentage of sensors online
-  lastUpdated: Date;
-}
-
 // Mock IoT sensor network simulation
 export class IoTSensorManager {
-  private sensors: Map<string, IoTSensor> = new Map();
-  private realtimeData: Map<string, RealTimeData> = new Map();
-  private dataStream: NodeJS.Timeout | null = null;
+  sensors = new Map();
+  realtimeData = new Map();
+  dataStream = null;
   
   constructor() {
     this.initializeSensors();
     this.startDataStreaming();
   }
   
-  private initializeSensors() {
+  initializeSensors() {
     const sensorConfigs = [
       { id: 'COUNTER_001', type: 'people_counter', location: 'Entry_Gate_1', zone: 'Zone_A' },
       { id: 'COUNTER_002', type: 'people_counter', location: 'Entry_Gate_2', zone: 'Zone_B' },
@@ -72,7 +24,7 @@ export class IoTSensorManager {
     sensorConfigs.forEach(config => {
       this.sensors.set(config.id, {
         sensorId: config.id,
-        type: config.type as any,
+        type: config.type,
         location: config.location,
         zone: config.zone,
         status: Math.random() > 0.1 ? 'active' : 'maintenance', // 90% active
@@ -83,14 +35,14 @@ export class IoTSensorManager {
     });
   }
   
-  private startDataStreaming() {
+  startDataStreaming() {
     // Simulate real-time data streaming every 2 seconds
     this.dataStream = setInterval(() => {
       this.updateRealTimeData();
     }, 2000);
   }
   
-  private updateRealTimeData() {
+  updateRealTimeData() {
     const zones = ['Zone_A', 'Zone_B', 'Zone_C', 'Zone_D', 'Buffer_1', 'Buffer_2'];
     
     zones.forEach(zoneId => {
@@ -120,7 +72,7 @@ export class IoTSensorManager {
     });
   }
   
-  async getSensorReadings(sensorId: string): Promise<SensorReading[]> {
+  async getSensorReadings(sensorId) {
     return new Promise((resolve) => {
       setTimeout(() => {
         const sensor = this.sensors.get(sensorId);
@@ -129,14 +81,14 @@ export class IoTSensorManager {
           return;
         }
         
-        const readings: SensorReading[] = [];
+        const readings = [];
         const currentTime = new Date();
         
         // Generate mock readings for the last hour
         for (let i = 0; i < 12; i++) {
           const timestamp = new Date(currentTime.getTime() - i * 5 * 60 * 1000); // Every 5 minutes
           
-          let data: any = {};
+          let data = {};
           let confidence = 0.85 + Math.random() * 0.1;
           
           switch (sensor.type) {
@@ -172,8 +124,8 @@ export class IoTSensorManager {
     });
   }
   
-  private generateYOLODetections(zone: string): YOLODetection[] {
-    const detections: YOLODetection[] = [];
+  generateYOLODetections(zone) {
+    const detections = [];
     const numPeople = Math.floor(Math.random() * 15) + 5; // 5-20 people detected
     
     for (let i = 0; i < numPeople; i++) {
@@ -208,15 +160,15 @@ export class IoTSensorManager {
     return detections;
   }
   
-  async getRealTimeData(): Promise<RealTimeData[]> {
+  async getRealTimeData() {
     return Array.from(this.realtimeData.values());
   }
   
-  async getSensorStatus(): Promise<IoTSensor[]> {
+  async getSensorStatus() {
     return Array.from(this.sensors.values());
   }
   
-  async updateSensorStatus(sensorId: string, status: IoTSensor['status']): Promise<boolean> {
+  async updateSensorStatus(sensorId, status) {
     const sensor = this.sensors.get(sensorId);
     if (sensor) {
       sensor.status = status;
