@@ -12,11 +12,11 @@ import { QrCode, CreditCard, Download, Clock, MapPin, AlertTriangle, CheckCircle
 import GroupBookingForm from '@/components/GroupBookingForm';
 import { toast } from '@/hooks/use-toast';
 
-const PilgrimPortal: React.FC = () => {
+const PilgrimPortal = () => {
   const { user, language } = useAuth();
   const t = useTranslation(language);
-  const [passes, setPasses] = useState<Pass[]>([]);
-  const [penalties, setPenalties] = useState<Penalty[]>([]);
+  const [passes, setPasses] = useState([]);
+  const [penalties, setPenalties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedZone, setSelectedZone] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -50,7 +50,7 @@ const PilgrimPortal: React.FC = () => {
     }
   };
 
-  const handleBookPass = async (groupMembers: GroupMember[], tentCityDays?: number) => {
+  const handleBookPass = async (groupMembers, tentCityDays) => {
     if (!user || !selectedZone) return;
     
     setBookingLoading(true);
@@ -83,7 +83,7 @@ const PilgrimPortal: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status) => {
     switch (status) {
       case 'active':
         return <Badge variant="secondary" className="bg-success text-success-foreground">Active</Badge>;
@@ -96,7 +96,7 @@ const PilgrimPortal: React.FC = () => {
     }
   };
 
-  const generateQRCode = (passId: string) => {
+  const generateQRCode = (passId) => {
     // In a real app, this would generate an actual QR code
     return `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='200' height='200' fill='%23000'/><rect x='20' y='20' width='160' height='160' fill='%23fff'/><text x='100' y='110' text-anchor='middle' fill='%23000' font-size='12'>QR: ${passId}</text></svg>`;
   };

@@ -18,13 +18,13 @@ import {
   RefreshCw
 } from 'lucide-react';
 
-const AuthorityDashboard: React.FC = () => {
+const AuthorityDashboard = () => {
   const { language } = useAuth();
   const t = useTranslation(language);
-  const [crowdData, setCrowdData] = useState<CrowdData[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [crowdData, setCrowdData] = useState([]);
+  const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
   useEffect(() => {
     loadDashboardData();
@@ -69,7 +69,7 @@ const AuthorityDashboard: React.FC = () => {
     return Math.round(totalCapacity / crowdData.length);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status) => {
     switch (status) {
       case 'critical': return 'destructive';
       case 'warning': return 'secondary';
@@ -78,7 +78,7 @@ const AuthorityDashboard: React.FC = () => {
     }
   };
 
-  const getAlertSeverityColor = (severity: string) => {
+  const getAlertSeverityColor = (severity) => {
     switch (severity) {
       case 'critical': return 'destructive';
       case 'high': return 'secondary';

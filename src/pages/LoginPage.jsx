@@ -9,16 +9,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/utils/translations';
 import { CreditCard, Shield, Users } from 'lucide-react';
 
-const LoginPage: React.FC = () => {
+const LoginPage = () => {
   const [aadhaar, setAadhaar] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'pilgrim' | 'authority'>('pilgrim');
+  const [role, setRole] = useState('pilgrim');
   const [isLoading, setIsLoading] = useState(false);
   const { login, language } = useAuth();
   const navigate = useNavigate();
   const t = useTranslation(language);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const cleanAadhaar = aadhaar.replace(/\s/g, '');
     if (!cleanAadhaar || cleanAadhaar.length !== 12 || !name.trim()) {

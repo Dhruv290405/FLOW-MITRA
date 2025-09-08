@@ -5,12 +5,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/utils/translations';
 import { Globe, LogOut, User } from 'lucide-react';
 
-const Navigation: React.FC = () => {
+const Navigation = () => {
   const { user, logout, language, toggleLanguage } = useAuth();
   const location = useLocation();
   const t = useTranslation(language);
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path) => location.pathname === path;
 
   return (
     <nav className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 shadow-soft">

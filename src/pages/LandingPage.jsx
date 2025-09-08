@@ -7,7 +7,7 @@ import { useTranslation } from '@/utils/translations';
 import { QrCode, Users, Globe, Shield, Zap, BarChart3 } from 'lucide-react';
 import heroImage from '@/assets/mahakumbh-hero.jpg';
 
-const LandingPage: React.FC = () => {
+const LandingPage = () => {
   const { language } = useAuth();
   const t = useTranslation(language);
 

@@ -10,33 +10,14 @@ import { iotSensorManager, RealTimeData } from '@/services/iotSensorService';
 import { aiPredictionEngine } from '@/services/aiPredictionService';
 import { calculateCrowdFlow, generatePredictiveAlerts, CrowdFlowData, PredictiveAlert } from '@/services/crowdFlowAlgorithm';
 
-interface PowerBIAnalytics {
-  totalVisitors: number;
-  peakCapacity: number;
-  avgDwellTime: number;
-  zoneUtilization: { zone: string; utilization: number; capacity: number }[];
-  hourlyFlow: { hour: number; entries: number; exits: number }[];
-  predictionAccuracy: number;
-  alertsGenerated: number;
-  alertsResolved: number;
-}
-
-interface LiveHeatmapData {
-  zone: string;
-  density: number;
-  temperature: number;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
-  coordinates: { x: number; y: number };
-}
-
-const PowerBIDashboard: React.FC = () => {
-  const [analytics, setAnalytics] = useState<PowerBIAnalytics | null>(null);
-  const [realTimeData, setRealTimeData] = useState<RealTimeData[]>([]);
-  const [crowdFlow, setCrowdFlow] = useState<CrowdFlowData[]>([]);
-  const [predictions, setPredictions] = useState<PredictiveAlert[]>([]);
-  const [heatmapData, setHeatmapData] = useState<LiveHeatmapData[]>([]);
+const PowerBIDashboard = () => {
+  const [analytics, setAnalytics] = useState(null);
+  const [realTimeData, setRealTimeData] = useState([]);
+  const [crowdFlow, setCrowdFlow] = useState([]);
+  const [predictions, setPredictions] = useState([]);
+  const [heatmapData, setHeatmapData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
   useEffect(() => {
     loadDashboardData();
