@@ -27,18 +27,25 @@ const LoginPage = () => {
 
     setIsLoading(true);
     
-    // Simulate API call with Aadhaar validation
-    setTimeout(() => {
-      login(cleanAadhaar, name.trim(), role);
-      setIsLoading(false);
+    try {
+      const result = await login(cleanAadhaar, name.trim(), role);
       
-      // Redirect based on role
-      if (role === 'pilgrim') {
-        navigate('/pilgrim');
+      if (result.success) {
+        // Redirect based on role
+        if (role === 'pilgrim') {
+          navigate('/pilgrim');
+        } else {
+          navigate('/authority');
+        }
       } else {
-        navigate('/authority');
+        console.error('Login failed:', result.error);
+        // You can add toast notification here
       }
-    }, 1500);
+    } catch (error) {
+      console.error('Login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

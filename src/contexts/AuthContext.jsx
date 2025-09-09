@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
-import { auth } from '@/lib/supabase';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth, supabase } from '@/lib/supabase';
 
 const AuthContext = createContext(undefined);
 
@@ -13,7 +13,52 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [session, setSession] = useState(null);
   const [language, setLanguage] = useState('hi');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        if (session?.user) {
+          // Create mock user data if authenticated
+          const mockUser = {
+            id: session.user.id,
+            name: session.user.user_metadata?.full_name || 'Test User',
+            aadhaar: session.user.user_metadata?.aadhaar_number || '123456789012',
+            mobile: `9${Math.floor(Math.random() * 900000000) + 100000000}`,
+            role: session.user.user_metadata?.role || 'pilgrim',
+            bankAccount: `${(session.user.user_metadata?.aadhaar_number || '123456789012').slice(-4)}XXXX`
+          };
+          setUser(mockUser);
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        const mockUser = {
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || 'Test User',
+          aadhaar: session.user.user_metadata?.aadhaar_number || '123456789012',
+          mobile: `9${Math.floor(Math.random() * 900000000) + 100000000}`,
+          role: session.user.user_metadata?.role || 'pilgrim',
+          bankAccount: `${(session.user.user_metadata?.aadhaar_number || '123456789012').slice(-4)}XXXX`
+        };
+        setUser(mockUser);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const login = async (aadhaar, name, role) => {
     try {
@@ -65,6 +110,8 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    session,
+    loading,
     login,
     logout,
     isAuthenticated,

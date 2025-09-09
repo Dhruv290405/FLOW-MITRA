@@ -13,7 +13,7 @@ import GroupBookingForm from '@/components/GroupBookingForm';
 import { toast } from '@/hooks/use-toast';
 
 const PilgrimPortal = () => {
-  const { user, language } = useAuth();
+  const { user, language, loading: authLoading } = useAuth();
   const t = useTranslation(language);
   const [passes, setPasses] = useState([]);
   const [penalties, setPenalties] = useState([]);
@@ -23,10 +23,10 @@ const PilgrimPortal = () => {
   const [activeTab, setActiveTab] = useState('passes');
 
   useEffect(() => {
-    if (user) {
+    if (user && !authLoading) {
       loadUserData();
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const loadUserData = async () => {
     if (!user) return;
@@ -101,7 +101,8 @@ const PilgrimPortal = () => {
     return `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='200' height='200' fill='%23000'/><rect x='20' y='20' width='160' height='160' fill='%23fff'/><text x='100' y='110' text-anchor='middle' fill='%23000' font-size='12'>QR: ${passId}</text></svg>`;
   };
 
-  if (loading) {
+  // Show loading state while authenticating or loading data
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
