@@ -18,88 +18,29 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        if (session?.user) {
-          // Create mock user data if authenticated
-          const mockUser = {
-            id: session.user.id,
-            name: session.user.user_metadata?.full_name || 'Test User',
-            aadhaar: session.user.user_metadata?.aadhaar_number || '123456789012',
-            mobile: `9${Math.floor(Math.random() * 900000000) + 100000000}`,
-            role: session.user.user_metadata?.role || 'pilgrim',
-            bankAccount: `${(session.user.user_metadata?.aadhaar_number || '123456789012').slice(-4)}XXXX`
-          };
-          setUser(mockUser);
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        const mockUser = {
-          id: session.user.id,
-          name: session.user.user_metadata?.full_name || 'Test User',
-          aadhaar: session.user.user_metadata?.aadhaar_number || '123456789012',
-          mobile: `9${Math.floor(Math.random() * 900000000) + 100000000}`,
-          role: session.user.user_metadata?.role || 'pilgrim',
-          bankAccount: `${(session.user.user_metadata?.aadhaar_number || '123456789012').slice(-4)}XXXX`
-        };
-        setUser(mockUser);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    // Simple demo mode - skip complex auth for now
+    setLoading(false);
   }, []);
 
   const login = async (aadhaar, name, role) => {
-    try {
-      // For demo purposes, create a mock email from Aadhaar
-      const email = `${aadhaar}@simhastha.gov.in`;
-      const password = aadhaar; // In production, use proper password
-
-      // Try to sign in first
-      let result = await auth.signIn(email, password);
-      
-      // If sign in fails, create new user
-      if (result.error) {
-        result = await auth.signUp(email, password, {
-          full_name: name,
-          aadhaar_number: aadhaar,
-          role: role
-        });
-      }
-
-      if (result.data?.user) {
-        const mockUser = {
-          id: result.data.user.id,
-          name: name,
-          aadhaar: aadhaar,
-          mobile: `9${Math.floor(Math.random() * 900000000) + 100000000}`,
-          role: role,
-          bankAccount: `${aadhaar.slice(-4)}XXXX`
-        };
-        setUser(mockUser);
-        return { success: true, user: mockUser };
-      }
-      
-      return { success: false, error: result.error?.message };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
+    // Simple demo login - bypassing Supabase for now
+    const mockUser = {
+      id: `demo-${aadhaar}`,
+      name: name,
+      aadhaar: aadhaar,
+      mobile: `9${Math.floor(Math.random() * 900000000) + 100000000}`,
+      role: role,
+      bankAccount: `${aadhaar.slice(-4)}XXXX`
+    };
+    
+    setUser(mockUser);
+    setLoading(false);
+    return { success: true, user: mockUser };
   };
 
   const logout = async () => {
-    await auth.signOut();
     setUser(null);
+    setSession(null);
   };
 
   const toggleLanguage = () => {
